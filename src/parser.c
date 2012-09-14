@@ -76,8 +76,8 @@ px_parse_key(char *data)
 {
 	int len = 0;
 	
-	/* print key */
-	while (isalnum(*data)) {
+	/* include allowed characters */
+	while (isalnum(*data) || *data == '-') {
 		++data;
 		++len;
 	}
