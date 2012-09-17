@@ -36,6 +36,7 @@
 #include "setup.h"
 #include "connect.h"
 #include "tunnel.h"
+#include "proxy.h"
 
 int
 main(int argc, char **argv)
@@ -49,6 +50,12 @@ main(int argc, char **argv)
 	
 	/* connect to proxy (does not return on failure) */
 	sock = tcp_connect(config.proxyname, config.proxyport);
+	
+	/* tunnel setup */
+	if (proxy_connect(sock, config.hostname, config.hostport) != 0) {
+		close(sock);
+		return EX_UNAVAILABLE;
+	}
 	
 	/* tunnel data (does not return on failure) */
 	tunnel_handler(config.ifd, config.ofd, sock, sock);
