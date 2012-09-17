@@ -94,8 +94,8 @@ proxy_connect(int sock, char*hostname, int hostport)
 			if ((ep = strnstr(buffer, "\n\n", len))) {
 				eoflen = 2;
 				break; /* end of headers found */
-#endif /* PROXY_HEADER_END_ALLOW_LFLF */
 			}
+#endif /* PROXY_HEADER_END_ALLOW_LFLF */
 		} else {
 			/* search part of the buffer */
 			if ((ep = strnstr(bp - 3, "\r\n\r\n", rlen + 3)))
@@ -104,8 +104,8 @@ proxy_connect(int sock, char*hostname, int hostport)
 			if ((ep = strnstr(bp - 1, "\n\n", rlen + 1))) {
 				eoflen = 2;
 				break; /* end of headers found */
-#endif /* PROXY_HEADER_END_ALLOW_LFLF */
 			}
+#endif /* PROXY_HEADER_END_ALLOW_LFLF */
 		}
 		
 		if (len == sizeof(buffer)) {
@@ -124,6 +124,30 @@ proxy_connect(int sock, char*hostname, int hostport)
 		return -1;
 	}
 	
-	return 0;
+	/* check if response was HTTP/1.x 200 */
+	if (strncmp(buffer, "HTTP/1.", 7) == 0 && strncmp(buffer + 9, "200", 3) == 0)
+		return 0; /* return OK */
+	
+	/*** it was not 200 ;-( ***/
+	
+	int pos;
+	
+	/* print error message by terminating first header with '\0' */
+	for (pos = 0; pos < len; ++pos, ++bp)
+	{
+#ifdef PROXY_HEADER_END_ALLOW_LFLF
+		if (*bp == '\r' || *bp == '\n') {
+#else
+		if (*bp == '\r') {
+#endif
+			*bp = '\0';
+			warnx("proxy connect failed: %s", buffer);
+			return -1;
+		}
+	}
+	
+	/* should never be reached */
+	warnx("proxy connect failed: unexpected, plz debug");
+	return -1;
 }
 
