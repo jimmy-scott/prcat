@@ -23,7 +23,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <err.h>
+#include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -36,18 +39,38 @@ static char b64chars[] = {
 	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
 };
 
-#define BASE64LEN 512
 /* return base64 encoded string */
-static char *
+char *
 base64(char *s)
 {
-	int i, j;
+	int i, j, blen;
+	size_t slen;
 	unsigned int bits = 0;
 	unsigned char tmp[4];
-	static char out[BASE64LEN];
+	char *out;
+
+	/* length of s(tring) */
+	slen = strlen(s);
+	
+	/* function does not handle a buffer > INT_MAX;
+	 * check max length we can allocate a buffer for */
+	if (slen > ((INT_MAX / 4) * 3)) {
+		warnx("base64: string too long");
+		return NULL;
+	}
+	
+	/* length of b(uffer) - we can now safely do
+	 * this calculation without overflow */
+	blen = (((slen + 2) / 3) * 4) + 1;
+
+	/* allocate memory for encoded string */
+	if ((out = malloc(blen)) == NULL) {
+		warn("base64: malloc failed");
+		return NULL;
+	}
 
 	j = 0;
-	for(i = 0; i < strlen(s) && (j-4) < (BASE64LEN - 1); i++) {
+	for(i = 0; i < slen /* && (j-4) < (blen - 1) */ ; i++) {
 		bits <<= 8;
 		bits |= s[i] & 0xff;
 
@@ -91,5 +114,4 @@ base64(char *s)
 	out[j] = '\0';
 	return out;
 }
-#undef BASE64LEN
 
