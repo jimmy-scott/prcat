@@ -38,6 +38,8 @@ typedef struct config_t {
 	int ifd;	/* input fd */
 	int ofd;	/* output fd */
 	char *filename;	/* config file in use - can be malloc'ed */
+	char *username;
+	char *password; /* can me malloc'ed */
 	char *hostname;
 	int hostport;
 	char *proxyname;

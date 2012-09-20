@@ -158,9 +158,11 @@ parse_args(struct config_t *config, int argc, char **argv)
 	char *endptr = NULL;
 	
 	/* options */
-	static char *shortopts = "f:P:H:I:O:";
+	static char *shortopts = "f:u:p:P:H:I:O:";
 	static struct option longopts[] = {
 		{ "filename",   required_argument, NULL, 'f' },
+		{ "username",   required_argument, NULL, 'u' },
+		{ "password",   required_argument, NULL, 'p' },
 		{ "proxy-host", required_argument, NULL, 'H' },
 		{ "proxy-port", required_argument, NULL, 'P' },
 		{ "input-fd",   required_argument, NULL, 'I' },
@@ -173,6 +175,12 @@ parse_args(struct config_t *config, int argc, char **argv)
 		switch (c) {
 		case 'f':
 			config->filename = optarg;
+			break;
+		case 'u':
+			config->username = optarg;
+			break;
+		case 'p':
+			config->password = optarg;
 			break;
 		case 'H':
 			config->proxyname = optarg;
@@ -263,8 +271,20 @@ parse_conf(struct config_t *config, char *filename)
 		key = parser.items[i].key;
 		value = parser.items[i].value;
 		
-		/* process option - assign if undefined */
-		if (strcmp(key, "proxy-host") == 0)
+		/* process options */
+		if (strcmp(key, "username") == 0)
+		{
+			/* set if not set */
+			if (!config->username)
+				config->username = value;
+		}
+		else if (strcmp(key, "password") == 0)
+		{
+			/* set if not set */
+			if (!config->password)
+				config->password = value;
+		}
+		else if (strcmp(key, "proxy-host") == 0)
 		{
 			/* set if not set */
 			if (!config->proxyname)
