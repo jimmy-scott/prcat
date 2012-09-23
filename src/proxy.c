@@ -30,21 +30,71 @@
 
 #include <err.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "base64.h"
 #include "proxy.h"
 
+/*
+ * Returns base64 encoded "username:password" or NULL on error.
+ * Both username and password need to point to a string.
+ */
+
+static char *
+proxy_basic_auth_token(char *username, char *password)
+{
+	char *up, *auth;
+	
+	up = malloc(strlen(username) + strlen(password) + 2);
+	
+	if (!up)
+		return NULL;
+	
+	/* sets 'up' to "username:password" */
+	stpcpy(stpcpy(stpcpy(up, username), ":"), password);
+	
+	/* get base64 encoded string */
+	auth = base64(up);
+	
+	/* cleanup */
+	free(up);
+	
+	/* return encoded string or NULL on base64 error */
+	return auth;
+}
+
 int
-proxy_connect(int sock, char*hostname, int hostport)
+proxy_connect(int sock, char *hostname, int hostport,
+	char *username, char *password)
 {
 	int len, rlen, wlen, hlen, eoflen = 4;
 	char buffer[4096];
+	char *auth = NULL;
 	char *bp, *ep;
 	
+	/* get auth string if username and password are defined */
+	if (username && password) {
+		auth = proxy_basic_auth_token(username, password);
+		if (!auth) {
+			warnx("compose basic auth token failed");
+			return -1;
+		}
+	}
+	
 	/* compose headers */
-	len = snprintf(buffer, sizeof(buffer),
-		"CONNECT %s:%i HTTP/1.0\r\n\r\n", hostname, hostport);
+	if (auth) {
+		len = snprintf(buffer, sizeof(buffer),
+			"CONNECT %s:%i HTTP/1.0\r\n"
+			"Proxy-Authorization: Basic %s\r\n"
+			"\r\n", hostname, hostport, auth);
+		free(auth);
+	} else {
+		len = snprintf(buffer, sizeof(buffer),
+			"CONNECT %s:%i HTTP/1.0\r\n"
+			"\r\n", hostname, hostport);
+	}
 	
 	if (len >= sizeof(buffer)) {
 		warnx("http send headers too long");

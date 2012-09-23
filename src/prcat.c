@@ -52,7 +52,9 @@ main(int argc, char **argv)
 	sock = tcp_connect(config.proxyname, config.proxyport);
 	
 	/* tunnel setup */
-	if (proxy_connect(sock, config.hostname, config.hostport) != 0) {
+	if (proxy_connect(sock, config.hostname, config.hostport,
+		config.username, config.password) != 0)
+	{
 		close(sock);
 		return EX_UNAVAILABLE;
 	}
