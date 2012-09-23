@@ -29,6 +29,7 @@
  */
 
 #include <err.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,8 +47,16 @@ static char *
 proxy_basic_auth_token(char *username, char *password)
 {
 	char *up, *auth;
+	size_t ulen, plen;
 	
-	up = malloc(strlen(username) + strlen(password) + 2);
+	ulen = strlen(username);
+	plen = strlen(password);
+	
+	/* check for overflow */
+	if (SIZE_T_MAX - ulen < plen || (SIZE_T_MAX - ulen) - plen < 2)
+		return NULL;
+	
+	up = malloc(ulen + plen + 2);
 	
 	if (!up)
 		return NULL;
