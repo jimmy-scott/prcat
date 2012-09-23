@@ -2,7 +2,8 @@ CC = gcc
 CFLAGS = -pedantic -Wall -std=c99 -O2
 
 PROGS = prcat
-OBJECTS = readfile.o parser.o setup.o connect.o tunnel.o proxy.o base64.o
+OBJECTS = readfile.o parser.o setup.o connect.o tunnel.o proxy.o base64.o \
+	xgetpass.o askpass.o
 
 all: $(PROGS)
 

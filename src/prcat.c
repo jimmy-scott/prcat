@@ -33,10 +33,13 @@
 #include <unistd.h>
 #include <sysexits.h>
 
+#include "askpass.h"
 #include "setup.h"
 #include "connect.h"
 #include "tunnel.h"
 #include "proxy.h"
+
+#define PASSWORD_PROMPT "Proxy password: "
 
 int
 main(int argc, char **argv)
@@ -47,6 +50,14 @@ main(int argc, char **argv)
 	/* parse arguments and config file */
 	if (setup(&config, argc, argv) != SETUP_OK)
 		return EX_USAGE;
+	
+	/* ask password if none was given, but username is set */
+	if (config.username && !config.password) {
+		config.password = askpass_tty(PASSWORD_PROMPT);
+		/* exit if unable to get password */
+		if (!config.password)
+			return EX_NOINPUT;
+	}
 	
 	/* connect to proxy (does not return on failure) */
 	sock = tcp_connect(config.proxyname, config.proxyport);
