@@ -141,27 +141,27 @@ proxy_connect(int sock, char *hostname, int hostport,
 		
 		len += rlen;
 		
-		/* avoid undefined behaviour in strnstr */
+		/* avoid undefined behaviour in memmem */
 		if (len < 4)
 			continue;
 		
 		/* check if end of headers received */
 		if (len - rlen < 3) {
 			/* search entire buffer */
-			if ((ep = strnstr(buffer, "\r\n\r\n", len)))
+			if ((ep = memmem(buffer, len, "\r\n\r\n", 4)))
 				break; /* end of headers found */
 #ifdef PROXY_HEADER_END_ALLOW_LFLF
-			if ((ep = strnstr(buffer, "\n\n", len))) {
+			if ((ep = memmem(buffer, len, "\n\n", 2))) {
 				eoflen = 2;
 				break; /* end of headers found */
 			}
 #endif /* PROXY_HEADER_END_ALLOW_LFLF */
 		} else {
 			/* search part of the buffer */
-			if ((ep = strnstr(bp - 3, "\r\n\r\n", rlen + 3)))
+			if ((ep = memmem(bp - 3, rlen + 3, "\r\n\r\n", 4)))
 				break; /* end of headers found */
 #ifdef PROXY_HEADER_END_ALLOW_LFLF
-			if ((ep = strnstr(bp - 1, "\n\n", rlen + 1))) {
+			if ((ep = memmem(bp - 1, rlen + 1, "\n\n", 2))) {
 				eoflen = 2;
 				break; /* end of headers found */
 			}
