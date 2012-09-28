@@ -32,9 +32,10 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "porting.h"
 
 #include "readfile.h"
 #include "parser.h"
@@ -59,7 +60,7 @@
 /* if you want to allocate up to the max possible bytes */
 // #define PARSER_GROW_MAX_POSSIBLE_BYTES
 /* note: this will generate warning on architectures where
- *   MAX_INT < (SIZE_T_MAX / sizeof(parser_item_t))
+ *   MAX_INT < (SIZE_MAX / sizeof(parser_item_t))
  * it is not harmful, but there is no point enabling this then */
 
 #ifndef PARSER_GROW_FACTOR
@@ -189,13 +190,13 @@ parser_grow(struct parser_t *pd, int size)
 #endif
 	
 	/* get alloc_bytes and check for overflow */
-	if (alloc_items > (SIZE_T_MAX / sizeof(parser_item_t))) {
+	if (alloc_items > (SIZE_MAX / sizeof(parser_item_t))) {
 #ifdef PARSER_GROW_MAX_POSSIBLE_BYTES
-		if (pd->length == (SIZE_T_MAX / sizeof(parser_item_t))) {
+		if (pd->length == (SIZE_MAX / sizeof(parser_item_t))) {
 			errno = EOVERFLOW;
 			return -1;
 		} else {
-			alloc_items = SIZE_T_MAX / sizeof(parser_item_t);
+			alloc_items = SIZE_MAX / sizeof(parser_item_t);
 			alloc_bytes = (size_t)alloc_items * sizeof(parser_item_t);
 		}
 	} else

@@ -28,64 +28,20 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
+#ifndef _PORTING_H_
+#define _PORTING_H_
 
-#include "porting.h"
+#include <limits.h>
+#include <stdint.h>
 
-#include "readfile.h"
+/* try to get a working SIZE_MAX */
 
-/*
- * Returns content of the file, or NULL in case of error.
- * You need to use free() on the pointer to reclaim its memory.
- */
+#ifndef SIZE_MAX
+        #ifndef SIZE_T_MAX
+                #error SIZE_MAX/SIZE_T_MAX is not defined
+        #else
+                #define SIZE_MAX SIZE_T_MAX
+        #endif
+#endif
 
-char *
-readfile(char *filename)
-{
-	FILE *fp;
-	char *data;
-	off_t size;
-	
-	/* open file for reading */
-	if ((fp = fopen(filename, "r")) == NULL)
-		return NULL;
-	
-	/* seek to end, get position, seek to begin */
-	if (
-		fseek(fp, 0L, SEEK_END) != 0 ||
-		(size = ftello(fp)) == -1 ||
-		fseek(fp, 0L, SEEK_SET) != 0
-	) {
-		fclose(fp);
-		return NULL;
-	}
-	
-	/* check if +1 will overflow (or if file is larger) */
-	if (size >= SIZE_MAX) {
-		errno = EOVERFLOW;
-		fclose(fp);
-		return NULL;
-	}
-	
-	/* allocate memory */
-	if ((data = (char*)malloc(size + 1)) == NULL) {
-		fclose(fp);
-		return NULL;
-	}
-	
-	/* read data */
-	if (fread(data, sizeof(char), size, fp) != size) {
-		free(data);
-		fclose(fp);
-		return NULL;
-	}
-	
-	/* terminate with null byte */
-	data[size] = '\0';
-	fclose(fp);
-	
-	return data;
-}
-
+#endif /* _PORTING_H_ */

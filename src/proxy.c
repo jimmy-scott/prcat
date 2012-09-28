@@ -29,11 +29,12 @@
  */
 
 #include <err.h>
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "porting.h"
 
 #include "base64.h"
 #include "proxy.h"
@@ -53,7 +54,7 @@ proxy_basic_auth_token(char *username, char *password)
 	plen = strlen(password);
 	
 	/* check for overflow */
-	if (SIZE_T_MAX - ulen < plen || (SIZE_T_MAX - ulen) - plen < 2)
+	if (SIZE_MAX - ulen < plen || (SIZE_MAX - ulen) - plen < 2)
 		return NULL;
 	
 	up = malloc(ulen + plen + 2);
