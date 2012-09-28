@@ -36,9 +36,6 @@
 #include "readfile.h"
 
 /* must be defined for check in readfile() */
-#ifndef OFF_MAX
-	#error OFF_MAX is not defined
-#endif
 #ifndef SIZE_T_MAX
 	#error SIZE_T_MAX is not defined
 #endif
@@ -69,14 +66,8 @@ readfile(char *filename)
 		return NULL;
 	}
 	
-#if OFF_MAX > SIZE_T_MAX
-	/* if file is larger than what can be allocated */
-	/* sign mismatch, ok since both should be positive */
+	/* check if +1 will overflow (or if file is larger) */
 	if (size >= SIZE_T_MAX) {
-#else
-	/* check if +1 will overflow */
-	if (size == SIZE_T_MAX) {
-#endif
 		errno = EOVERFLOW;
 		fclose(fp);
 		return NULL;
