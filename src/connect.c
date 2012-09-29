@@ -43,8 +43,8 @@
 
 /*
  * Make a TCP connection to host:port. Returns the file descriptor of
- * the socket if a connection could be established. Never returns if
- * there was an error.
+ * the socket if a connection could be established. Returns -1 if there
+ * was an error.
  */
 
 int
@@ -55,12 +55,16 @@ tcp_connect(char *host, int port)
 	struct sockaddr_in addr;	/* host connect information */
 	
 	/* get hostent from hostname or address */
-	if((hent = gethostbyname(host)) == NULL)
-		errx(EX_NOHOST, "%s: hostname lookup failed", host);
+	if((hent = gethostbyname(host)) == NULL) {
+		warnx("%s: hostname lookup failed", host);
+		return -1;
+	}
 	
 	/* create inet tcp socket */
-	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-		err(EX_OSERR, "socket() call failed");
+	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+		warn("socket() call failed");
+		return -1;
+	}
 	
 	/* sockaddr_in: init to zero */
 	bzero(&addr, sizeof(addr));
@@ -74,7 +78,8 @@ tcp_connect(char *host, int port)
 	/* connect to host */
 	if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
 		close(sock);	/* cleanup */
-		err(EX_TEMPFAIL, "failed to connect to %s:%i", host, port);
+		warn("failed to connect to %s:%i", host, port);
+		return -1;
 	}
 	
 	/* all ok */

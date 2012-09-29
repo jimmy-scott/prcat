@@ -68,8 +68,9 @@ main(int argc, char **argv)
 			return EX_NOINPUT;
 	}
 	
-	/* connect to proxy (does not return on failure) */
-	sock = tcp_connect(config.proxyname, config.proxyport);
+	/* connect to proxy */
+	if ((sock = tcp_connect(config.proxyname, config.proxyport)) == -1)
+		return EX_UNAVAILABLE;
 	
 	/* tunnel setup */
 	if (proxy_connect(sock, config.hostname, config.hostport,
