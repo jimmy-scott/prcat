@@ -62,6 +62,18 @@ static int config_validate(struct config_t *config);
 static int parse_args(struct config_t *config, int argc, char **argv);
 static int parse_conf(struct config_t *config, char *filename);
 
+/*
+ * Parse arguments and config file.
+ *
+ * An alternate config file can be provided on the command line, in
+ * the case it will check if the default config file in the user's
+ * home folder exists and parse that one.
+ *
+ * Values are stored in the config_t structured which is passed as a
+ * pointer to the function. Function will return SETUP_OK if all was
+ * OK or SETUP_ERROR in case of an error.
+ */
+
 int
 setup(struct config_t *config, int argc, char **argv)
 {
@@ -109,6 +121,10 @@ setup(struct config_t *config, int argc, char **argv)
 	return SETUP_OK;
 }
 
+/*
+ * Initialize config_t structure to default values.
+ */
+
 static void
 config_init(struct config_t *config)
 {
@@ -120,6 +136,13 @@ config_init(struct config_t *config)
 	config->ofd = UNDEFINED_FD;
 }
 
+/*
+ * Finalize configuration by setting values that are left undefined.
+ *
+ * This is needed because values defined in the config file need to be
+ * able to distinguish whether it was set by an option argument or not.
+ */
+
 static void
 config_finalize(struct config_t *config)
 {
@@ -129,6 +152,17 @@ config_finalize(struct config_t *config)
 	if (config->ofd == UNDEFINED_FD)
 		config->ofd = STDOUT_FILENO;
 }
+
+/*
+ * Verify if mandatory values are set.
+ *
+ * This will verify all values that may be set by both an option
+ * argument and by configuring it in the config file. Logic of
+ * conflicting options should also go here. This is not the place
+ * to put checks for data that MUST be on the command line.
+ *
+ * Returns 0 if OK, -1 on error.
+ */
 
 static int
 config_validate(struct config_t *config)
@@ -145,6 +179,15 @@ config_validate(struct config_t *config)
 	
 	return 0; /* ok */
 }
+
+/*
+ * Parse command-line arguments, and set the values in *config.
+ *
+ * Parses both options and non-option arguments. Will validate input
+ * and amount of arguments.
+ *
+ * Returns 0 if OK, -1 on error.
+ */
 
 static int
 parse_args(struct config_t *config, int argc, char **argv)
@@ -231,6 +274,16 @@ parse_args(struct config_t *config, int argc, char **argv)
 	/* all ok */
 	return 0;
 }
+
+/*
+ * Parse configuration file, and set the values in *config.
+ *
+ * This function should never be called more than once: it uses static
+ * storage for the parser_t structure. The parser_t structure keeps
+ * track of the pointers to the file data and key/value pairs.
+ *
+ * Returns 0 if OK, -1 on error.
+ */
 
 static int
 parse_conf(struct config_t *config, char *filename)

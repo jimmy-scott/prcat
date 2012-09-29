@@ -41,6 +41,15 @@
 
 #define PASSWORD_PROMPT "Proxy password: "
 
+/*
+ * Handles main program flow.
+ *
+ * Parse command line options and config file data. Ask password if a
+ * username was provided, but no password was provided. Connect to the
+ * requested HTTP proxy server. Send the required HTTP CONNECT headers
+ * to the proxy. Tunnel all data.
+ */
+
 int
 main(int argc, char **argv)
 {

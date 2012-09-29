@@ -34,6 +34,15 @@
 #include "askpass.h"
 #include "xgetpass.h"
 
+/*
+ * Ask password on a TTY
+ *
+ * This will open /dev/tty or return NULL on failure. The provided
+ * prompt will be printed on the terminal, and the password will be
+ * be asked by the xgetpass function. Will either return the password
+ * or NULL on failure.
+ */
+
 char *
 askpass_tty(char *prompt)
 {

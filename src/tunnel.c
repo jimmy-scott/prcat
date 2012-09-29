@@ -37,10 +37,12 @@
 
 #include "tunnel.h"
 
-/* 
+/*
+ * Read data from one file descriptor, and write it to the other.
+ *
  * Returns number of bytes transmitted. Returns 0 on EOF.
  * Never returns if there is an error.
-*/
+ */
 
 int
 tunnel_tx(int rfd, int wfd)
@@ -67,7 +69,7 @@ tunnel_tx(int rfd, int wfd)
 
 /* 
  * Tunnel data between two file descriptiors.
-*/
+ */
 
 void
 tunnel_handler(int rfdx, int wfdx, int rfdy, int wfdy)

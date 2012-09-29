@@ -41,7 +41,7 @@
 
 /*
  * Returns base64 encoded "username:password" or NULL on error.
- * Both username and password need to point to a string.
+ * Both username and password MUST point to a string.
  */
 
 static char *
@@ -74,6 +74,23 @@ proxy_basic_auth_token(char *username, char *password)
 	/* return encoded string or NULL on base64 error */
 	return auth;
 }
+
+/*
+ * Setup a proxy tunnel using HTTP CONNECT.
+ *
+ * Function sends an HTTP CONNECT header to the socket file descriptor
+ * passed to this function. It will attempt to open a tunnel to the
+ * hostname and (host)port passed to this function. If username and
+ * password are not NULL, they will be used for basic authentication.
+ *
+ * This function will also check the response. If the proxy responds
+ * with "HTTP/1.x 200", the function will return 0. In the other case,
+ * or in case of an error, it will return -1.
+ *
+ * In some cases, the last read call could include data that is part
+ * of whatever you are trying to tunnel. Handling this situation is not
+ * yet implemented, so it will print a warning and return -1.
+ */
 
 int
 proxy_connect(int sock, char *hostname, int hostport,
