@@ -210,8 +210,6 @@ parse_args(struct config_t *config, int argc, char **argv)
 			config->ofd = (int)num;
 			break;
 		default:
-			/* TODO: check if this works for long opts */
-			warnx("invalid option: %s", argv[optind]);
 			return -1;
 			break;
 		}
