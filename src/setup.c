@@ -65,7 +65,7 @@ static int parse_conf(struct config_t *config, char *filename);
 int
 setup(struct config_t *config, int argc, char **argv)
 {
-	char *home, *cfgfile_p = NULL, *cfgfile = NULL;
+	char *home, *cfgfile = NULL;
 	
 	config_init(config);
 	
@@ -73,28 +73,24 @@ setup(struct config_t *config, int argc, char **argv)
 	if (parse_args(config, argc, argv) != 0)
 		return SETUP_ERROR;
 	
-	/* determine config file */
-	if (config->filename) {
-		/* supplied by user */
-		cfgfile = config->filename;
-	} else {
-		/* not supplied by user - check if default file exists */
+	/* if the user did not supply an alternate config file,
+	 * check if the default config file exists */
+	if (!config->filename) {
 		if ((home = getenv("HOME"))) {
-			cfgfile_p = malloc(strlen(home) + sizeof(CONFIG_FILE) + 2);
-			if (!cfgfile_p) {
+			cfgfile = malloc(strlen(home) + sizeof(CONFIG_FILE) + 2);
+			if (!cfgfile) {
 				warn("malloc failed for $HOME + " CONFIG_FILE);
 				return SETUP_ERROR;
 			}
-			stpcpy(stpcpy(stpcpy(cfgfile_p, home), "/"), CONFIG_FILE);
-			if (access(cfgfile_p, F_OK) == 0) {
+			stpcpy(stpcpy(stpcpy(cfgfile, home), "/"), CONFIG_FILE);
+			if (access(cfgfile, F_OK) == 0) {
 				/* file exists - keep malloc'ed data */
-				cfgfile = cfgfile_p;
-				config->filename = cfgfile_p;
+				config->filename = cfgfile;
 			} else {
 				/* file does not exist - free data */
 				errno = 0;
-				free(cfgfile_p);
-				cfgfile_p = NULL;
+				free(cfgfile);
+				cfgfile = NULL;
 			}
 		}
 	}
