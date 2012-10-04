@@ -46,6 +46,7 @@ typedef struct config_t {
 	int proxyport;
 } config_t;
 
+void usage(FILE *stream);
 int setup(struct config_t *config, int argc, char **argv);
 
 #endif /* _SETUP_H_ */

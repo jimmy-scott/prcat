@@ -57,8 +57,10 @@ main(int argc, char **argv)
 	struct config_t config;
 	
 	/* parse arguments and config file */
-	if (setup(&config, argc, argv) != SETUP_OK)
+	if (setup(&config, argc, argv) != SETUP_OK) {
+		usage(stderr);
 		return EX_USAGE;
+	}
 	
 	/* ask password if none was given, but username is set */
 	if (config.username && !config.password) {

@@ -33,14 +33,17 @@
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <limits.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sysexits.h>
 #include <unistd.h>
 
 #include "setup.h"
 #include "parser.h"
+#include "version.h"
 
 /* Macros for validating input. */
 
@@ -61,6 +64,31 @@ static void config_finalize(struct config_t *config);
 static int config_validate(struct config_t *config);
 static int parse_args(struct config_t *config, int argc, char **argv);
 static int parse_conf(struct config_t *config, char *filename);
+
+/*
+ * Print "short" usage information to stream.
+ */
+
+void
+usage(FILE *stream)
+{
+	fputs(
+	"usage: prcat [opts] <hostname> <port>\n\n"
+	"Arguments:\n"
+	"  hostname          Connect to this hostname\n"
+	"  port              Connect to this port number\n\n"
+	"Options:\n"
+	"  -u <username>     Username for proxy authentication\n"
+	"  -p <password>     Password for proxy authentication\n"
+	"  -H <proxy-host>   Connect to this proxy server\n"
+	"  -P <proxy-port>   Connect to this port on proxy server\n"
+	"  -I <input-fd>     Use this file descriptor for input\n"
+	"  -O <output-fd>    Use this file descriptor for ouput\n"
+	"  -f <filename>     Use this alternate configuration file\n"
+	"  -h                Show this help\n"
+	"  -v                Show version\n"
+	, stream);
+}
 
 /*
  * Parse arguments and config file.
@@ -186,7 +214,7 @@ config_validate(struct config_t *config)
  * Parses both options and non-option arguments. Will validate input
  * and amount of arguments.
  *
- * Returns 0 if OK, -1 on error.
+ * Returns 0 if OK, -1 on error. Exits on help/version.
  */
 
 static int
@@ -197,7 +225,7 @@ parse_args(struct config_t *config, int argc, char **argv)
 	char *endptr = NULL;
 	
 	/* options */
-	static char *shortopts = "f:u:p:P:H:I:O:";
+	static char *shortopts = "hvf:u:p:P:H:I:O:";
 	static struct option longopts[] = {
 		{ "filename",   required_argument, NULL, 'f' },
 		{ "username",   required_argument, NULL, 'u' },
@@ -206,6 +234,8 @@ parse_args(struct config_t *config, int argc, char **argv)
 		{ "proxy-port", required_argument, NULL, 'P' },
 		{ "input-fd",   required_argument, NULL, 'I' },
 		{ "output-fd",  required_argument, NULL, 'O' },
+		{ "help",       no_argument,       NULL, 'h' },
+		{ "version",    no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
 	};
 	
@@ -248,6 +278,15 @@ parse_args(struct config_t *config, int argc, char **argv)
 			}
 			config->ofd = (int)num;
 			break;
+		case 'h':
+			usage(stdout);
+			exit(EX_OK);
+			break;
+		case 'v':
+			/* too lame to make a function for this */
+			puts("prcat " BUILD_VERSION);
+			exit(EX_OK);
+			break;
 		default:
 			return -1;
 			break;
@@ -256,7 +295,7 @@ parse_args(struct config_t *config, int argc, char **argv)
 	
 	/* need 2 non-option argument */
 	if (argc - optind != 2) {
-		warnx("need 2 non-option arguments, got %i", (argc - optind));
+		warnx("need 2 arguments but got %i", (argc - optind));
 		return -1;
 	}
 	
