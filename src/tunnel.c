@@ -35,7 +35,48 @@
 #include <sysexits.h>
 #include <unistd.h>
 
+#include "buffer.h"
 #include "tunnel.h"
+
+/*
+ * Read data from a file descriptor.
+ *
+ * Returns number of bytes read. Returns 0 on EOF.
+ * Never returns if there is an error.
+ */
+
+static short
+tunnel_read(struct buffer_t *b, int rfd)
+{
+	/* read data */
+	b->s_len = read(rfd, b->data, sizeof(b->data));
+	
+	if (b->s_len == -1)
+		err(EX_IOERR, "read error");
+	
+	return b->s_len;
+}
+
+/*
+ * Write data to a file descriptor.
+ *
+ * Returns number of bytes written.
+ * Never returns if there is an error.
+ */
+
+static short
+tunnel_write(struct buffer_t *b, int wfd)
+{
+	/* write data */
+	b->w_len = write(wfd, b->data, b->s_len);
+	
+	if (b->w_len == -1)
+		err(EX_IOERR, "write error");
+	else if (b->w_len != b->s_len) /* who turned on O_NONBLOCK? */
+		err(EX_IOERR, "short write");
+	
+	return b->w_len;
+}
 
 /*
  * Read data from one file descriptor, and write it to the other.
@@ -44,24 +85,15 @@
  * Never returns if there is an error.
  */
 
-static int
+static short
 tunnel_tx(struct buffer_t *b, int rfd, int wfd)
 {
-	/* read data */
-	b->s_len = read(rfd, b->data, sizeof(b->data));
-	if (b->s_len == 0)
-		return 0; /* eof */
-	else if (b->s_len == -1)
-		err(EX_IOERR, "read error");
+	/* read data - return on eof */
+	if (tunnel_read(b, rfd) == 0)
+		return 0;
 	
-	/* write data */
-	b->w_len = write(wfd, b->data, b->s_len);
-	if (b->w_len == -1)
-		err(EX_IOERR, "write error");
-	else if (b->w_len != b->s_len) /* who turned on O_NONBLOCK? */
-		err(EX_IOERR, "short write");
-	
-	return b->w_len; /* all bytes transfered */
+	/* write data - return bytes transfered */
+	return tunnel_write(b, wfd);
 }
 
 /* 
