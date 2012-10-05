@@ -194,16 +194,16 @@ proxy_connect(int sock, char *hostname, int hostport,
 	bp = buffer;
 	hlen = (ep - bp) + eoflen;
 	
-	/* check if we read data from past the headers */
-	if (hlen != len) {
-		warnx("http read headers failed: needs to be fixed: "
-			"read %i bytes too much", len - hlen);
-		return -1;
-	}
-	
 	/* check if response was HTTP/1.x 200 */
-	if (strncmp(buffer, "HTTP/1.", 7) == 0 && strncmp(buffer + 9, "200", 3) == 0)
+	if (strncmp(buffer, "HTTP/1.", 7) == 0 && strncmp(buffer + 9, "200", 3) == 0) {
+		/* check if we read data from past the headers */
+		if (hlen != len) {
+			warnx("http read headers failed: needs to be fixed: "
+				"read %i bytes too much", len - hlen);
+			return -1;
+		}
 		return 0; /* return OK */
+	}
 	
 	/*** it was not 200 ;-( ***/
 	
