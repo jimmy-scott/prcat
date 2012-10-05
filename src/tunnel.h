@@ -33,7 +33,6 @@
 
 #include "buffer.h"
 
-int tunnel_tx(struct buffer_t *buffer, int rfd, int wfd);
 void tunnel_handler(struct buffer_t *buffer, int rfdx, int wfdx,
 	int rfdy, int wfdy);
 

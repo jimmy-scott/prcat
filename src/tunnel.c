@@ -44,7 +44,7 @@
  * Never returns if there is an error.
  */
 
-int
+static int
 tunnel_tx(struct buffer_t *b, int rfd, int wfd)
 {
 	/* read data */
