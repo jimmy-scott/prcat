@@ -3,7 +3,7 @@ CFLAGS = -pedantic -Wall -std=c99 -O2 -D_GNU_SOURCE
 
 PROG = prcat
 OBJECTS = readfile.o parser.o setup.o connect.o tunnel.o proxy.o base64.o \
-	xgetpass.o askpass.o
+	xgetpass.o askpass.o buffer.o
 
 VERSION = version.h
 MKVERSION = ../tools/mkversion.sh
