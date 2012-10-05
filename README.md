@@ -83,6 +83,21 @@ To install it, copy the binary to a bindir:
 
     $ sudo cp src/prcat /usr/local/bin/prcat
 
+Git-proxy configuration (git protocol)
+======================================
+
+To use it as a git proxy, make a config file with at least a username,
+the proxy-host and the proxy-port. An alternative is using a wrapper
+script that runs prcat with the command line switches you want.
+
+Once you have the config file in place, configure it like this:
+
+    $ git config --global core.gitproxy /path/to/prcat
+
+This should be it. You can now verify it by fetching my repo:
+
+    $ git clone git://github.com/jimmy-scott/prcat
+
 Questions
 =========
 
