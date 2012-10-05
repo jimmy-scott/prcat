@@ -35,12 +35,12 @@ setup.o: $(VERSION)
 # additional header dependencies for objects
 askpass.o: xgetpass.h
 parser.o: readfile.h porting.h
-proxy.o: base64.h porting.h
+proxy.o: base64.h porting.h buffer.h
 readfile.o: porting.h
 setup.o: parser.h
 
 # additional header dependencies for prog
-prcat.o: askpass.h connect.h proxy.h setup.h tunnel.h
+prcat.o: askpass.h connect.h proxy.h setup.h tunnel.h buffer.h
 
 .PHONY: clean
 clean:

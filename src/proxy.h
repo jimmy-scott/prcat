@@ -31,7 +31,9 @@
 #ifndef _PROXY_H_
 #define _PROXY_H_
 
-int proxy_connect(int sock, char*hostname, int hostport,
-	char *username, char *password);
+#include "buffer.h"
+
+int proxy_connect(int sock, struct buffer_t *buffer, char*hostname,
+	int hostport, char *username, char *password);
 
 #endif /* _PROXY_H_ */

@@ -37,6 +37,7 @@
 #include "porting.h"
 
 #include "base64.h"
+#include "buffer.h"
 #include "proxy.h"
 
 /*
@@ -86,18 +87,13 @@ proxy_basic_auth_token(char *username, char *password)
  * This function will also check the response. If the proxy responds
  * with "HTTP/1.x 200", the function will return 0. In the other case,
  * or in case of an error, it will return -1.
- *
- * In some cases, the last read call could include data that is part
- * of whatever you are trying to tunnel. Handling this situation is not
- * yet implemented, so it will print a warning and return -1.
  */
 
 int
-proxy_connect(int sock, char *hostname, int hostport,
-	char *username, char *password)
+proxy_connect(int sock, struct buffer_t *b, char *hostname,
+	int hostport, char *username, char *password)
 {
-	int len, rlen, wlen, hlen, eoflen = 4;
-	char buffer[4096];
+	int slen, nread, hlen, eoflen = 4;
 	char *auth = NULL;
 	char *bp, *ep;
 	
@@ -112,94 +108,108 @@ proxy_connect(int sock, char *hostname, int hostport,
 	
 	/* compose headers */
 	if (auth) {
-		len = snprintf(buffer, sizeof(buffer),
+		slen = snprintf(b->data, sizeof(b->data),
 			"CONNECT %s:%i HTTP/1.0\r\n"
 			"Proxy-Authorization: Basic %s\r\n"
 			"\r\n", hostname, hostport, auth);
 		free(auth);
 	} else {
-		len = snprintf(buffer, sizeof(buffer),
+		slen = snprintf(b->data, sizeof(b->data),
 			"CONNECT %s:%i HTTP/1.0\r\n"
 			"\r\n", hostname, hostport);
 	}
 	
-	if (len >= sizeof(buffer)) {
+	if (slen >= sizeof(b->data)) {
 		warnx("http send headers too long");
 		return -1;
 	}
+
+	/* update the length of stored bytes */
+	b->s_len = slen;
 	
 	/* send headers */
-	wlen = write(sock, buffer, len);
+	b->w_len = write(sock, b->data, b->s_len);
 	
-	if (wlen == 0) {
+	if (b->w_len == 0) {
 		warnx("http send headers failed: eof from proxy");
 		return -1;
-	} else if (wlen == -1) {
+	} else if (b->w_len == -1) {
 		warn("http send headers failed");
 		return -1;
-	} else if (wlen != len) {
+	} else if (b->w_len != b->s_len) {
 		warn("http send headers failed: short write");
 		return -1;
 	}
 	
 	/* receive headers */
-	for (len = 0, bp = buffer; /* forever */ ; bp += rlen)
+	for (b->s_len = 0, bp = b->data; /* forever */ ; bp += nread)
 	{
 		/* read header(s) */
-		rlen = read(sock, bp, sizeof(buffer) - len);
+		nread = read(sock, bp, sizeof(b->data) - b->s_len);
 		
-		if (rlen == 0) {
+		if (nread == 0) {
 			warnx("http read headers failed: eof from proxy");
 			return -1;
-		} else if (rlen == -1) {
+		} else if (nread == -1) {
 			warn("http read headers failed"); /* errno knows */
 			return -1;
 		}
 		
-		len += rlen;
+		/* read was ok, count the read bytes */
+		b->s_len += nread;
 		
 		/* avoid undefined behaviour in memmem */
-		if (len < 4)
+		if (b->s_len < 4)
 			continue;
 		
 		/* check if end of headers received */
-		if (len - rlen < 3) {
+		if (b->s_len - nread < 3) {
 			/* search entire buffer */
-			if ((ep = memmem(buffer, len, "\r\n\r\n", 4)))
+			if ((ep = memmem(b->data, b->s_len, "\r\n\r\n", 4)))
 				break; /* end of headers found */
 #ifdef PROXY_HEADER_END_ALLOW_LFLF
-			if ((ep = memmem(buffer, len, "\n\n", 2))) {
+			if ((ep = memmem(b->data, b->s_len, "\n\n", 2))) {
 				eoflen = 2;
 				break; /* end of headers found */
 			}
 #endif /* PROXY_HEADER_END_ALLOW_LFLF */
 		} else {
 			/* search part of the buffer */
-			if ((ep = memmem(bp - 3, rlen + 3, "\r\n\r\n", 4)))
+			if ((ep = memmem(bp - 3, nread + 3, "\r\n\r\n", 4)))
 				break; /* end of headers found */
 #ifdef PROXY_HEADER_END_ALLOW_LFLF
-			if ((ep = memmem(bp - 1, rlen + 1, "\n\n", 2))) {
+			if ((ep = memmem(bp - 1, nread + 1, "\n\n", 2))) {
 				eoflen = 2;
 				break; /* end of headers found */
 			}
 #endif /* PROXY_HEADER_END_ALLOW_LFLF */
 		}
 		
-		if (len == sizeof(buffer)) {
+		if (b->s_len == sizeof(b->data)) {
 			warnx("http read headers failed: buffer too small");
 			return -1;
 		}
 	}
 	
-	bp = buffer;
+	/* calculate the length of the headers by pointing back to
+	 * the beginning of the buffer, substracting that pointer from
+	 * the pointer that points to where the end of header mark was
+	 * found and adding the length of the end of header mark */
+	bp = b->data;
 	hlen = (ep - bp) + eoflen;
+
+	/* set the w_len to the length of the headers, so in the case
+	 * the return code was 200, it will be clear for the caller
+	 * whether there are still bytes in the buffer that need to
+	 * be handled */
+	b->w_len = hlen;
 	
 	/* check if response was HTTP/1.x 200 */
-	if (strncmp(buffer, "HTTP/1.", 7) == 0 && strncmp(buffer + 9, "200", 3) == 0) {
+	if (strncmp(b->data, "HTTP/1.", 7) == 0 && strncmp(b->data + 9, "200", 3) == 0) {
 		/* check if we read data from past the headers */
-		if (hlen != len) {
+		if (hlen != b->s_len) {
 			warnx("http read headers failed: needs to be fixed: "
-				"read %i bytes too much", len - hlen);
+				"read %i bytes too much", b->s_len - b->w_len);
 			return -1;
 		}
 		return 0; /* return OK */
@@ -210,7 +220,7 @@ proxy_connect(int sock, char *hostname, int hostport,
 	int pos;
 	
 	/* print error message by terminating first header with '\0' */
-	for (pos = 0; pos < len; ++pos, ++bp)
+	for (pos = 0; pos < b->s_len; ++pos, ++bp)
 	{
 #ifdef PROXY_HEADER_END_ALLOW_LFLF
 		if (*bp == '\r' || *bp == '\n') {
@@ -218,7 +228,7 @@ proxy_connect(int sock, char *hostname, int hostport,
 		if (*bp == '\r') {
 #endif
 			*bp = '\0';
-			warnx("proxy connect failed: %s", buffer);
+			warnx("proxy connect failed: %s", b->data);
 			return -1;
 		}
 	}

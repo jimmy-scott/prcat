@@ -34,6 +34,7 @@
 #include <sysexits.h>
 
 #include "askpass.h"
+#include "buffer.h"
 #include "setup.h"
 #include "connect.h"
 #include "tunnel.h"
@@ -55,6 +56,10 @@ main(int argc, char **argv)
 {
 	int sock;
 	struct config_t config;
+	struct buffer_t buffer;
+	
+	/* initialize buffer */
+	buffer_init(&buffer);
 	
 	/* parse arguments and config file */
 	if (setup(&config, argc, argv) != SETUP_OK) {
@@ -75,7 +80,7 @@ main(int argc, char **argv)
 		return EX_UNAVAILABLE;
 	
 	/* tunnel setup */
-	if (proxy_connect(sock, config.hostname, config.hostport,
+	if (proxy_connect(sock, &buffer, config.hostname, config.hostport,
 		config.username, config.password) != 0)
 	{
 		close(sock);
