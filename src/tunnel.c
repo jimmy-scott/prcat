@@ -79,6 +79,33 @@ tunnel_write(struct buffer_t *b, int wfd)
 }
 
 /*
+ * Write pending data to a file descriptor.
+ *
+ * Returns number of bytes flushed.
+ * Never returns if there is an error.
+ */
+
+static short
+tunnel_flush(struct buffer_t *b, int wfd)
+{
+	short flushed;
+	
+	/* write data */
+	flushed = write(wfd, b->data + b->w_len, b->s_len - b->w_len);
+	
+	if (flushed == -1)
+		err(EX_IOERR, "write error");
+	
+	/* count written data */
+	b->w_len += flushed;
+	
+	if (b->w_len != b->s_len) /* who turned on O_NONBLOCK? */
+		err(EX_IOERR, "short write");
+	
+	return flushed;
+}
+
+/*
  * Read data from one file descriptor, and write it to the other.
  *
  * Returns number of bytes transmitted. Returns 0 on EOF.
@@ -98,6 +125,8 @@ tunnel_tx(struct buffer_t *b, int rfd, int wfd)
 
 /* 
  * Tunnel data between two file descriptiors.
+ *
+ * If the buffer contains pending data, it will be written to wfdx.
  */
 
 void
@@ -109,6 +138,10 @@ tunnel_handler(struct buffer_t *b, int rfdx, int wfdx, int rfdy, int wfdy)
 	FD_ZERO(&all_rfds);
 	FD_SET(rfdx, &all_rfds);
 	FD_SET(rfdy, &all_rfds);
+	
+	/* flush pending data to wfdx */
+	if (b->w_len < b->s_len)
+		tunnel_flush(b, wfdx);
 	
 	for (;;)
 	{
