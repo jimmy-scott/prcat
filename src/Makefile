@@ -38,6 +38,7 @@ parser.o: readfile.h porting.h
 proxy.o: base64.h porting.h buffer.h
 readfile.o: porting.h
 setup.o: parser.h
+tunnel.o: buffer.h
 
 # additional header dependencies for prog
 prcat.o: askpass.h connect.h proxy.h setup.h tunnel.h buffer.h

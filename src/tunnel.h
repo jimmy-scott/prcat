@@ -31,7 +31,10 @@
 #ifndef _TUNNEL_H_
 #define _TUNNEL_H_
 
-int tunnel_tx(int rfd, int wfd);
-void tunnel_handler(int rfdx, int wfdx, int rfdy, int wfdy);
+#include "buffer.h"
+
+int tunnel_tx(struct buffer_t *buffer, int rfd, int wfd);
+void tunnel_handler(struct buffer_t *buffer, int rfdx, int wfdx,
+	int rfdy, int wfdy);
 
 #endif /* _TUNNEL_H_ */

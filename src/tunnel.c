@@ -45,26 +45,23 @@
  */
 
 int
-tunnel_tx(int rfd, int wfd)
+tunnel_tx(struct buffer_t *b, int rfd, int wfd)
 {
-	int rlen, wlen;
-	static char buffer[4096];
-	
 	/* read data */
-	rlen = read(rfd, buffer, sizeof(buffer));
-	if (rlen == 0)
+	b->s_len = read(rfd, b->data, sizeof(b->data));
+	if (b->s_len == 0)
 		return 0; /* eof */
-	else if (rlen == -1)
+	else if (b->s_len == -1)
 		err(EX_IOERR, "read error");
 	
 	/* write data */
-	wlen = write(wfd, buffer, rlen);
-	if (wlen == -1)
+	b->w_len = write(wfd, b->data, b->s_len);
+	if (b->w_len == -1)
 		err(EX_IOERR, "write error");
-	else if (wlen != rlen) /* who turned on O_NONBLOCK? */
+	else if (b->w_len != b->s_len) /* who turned on O_NONBLOCK? */
 		err(EX_IOERR, "short write");
 	
-	return rlen; /* all bytes transfered */
+	return b->w_len; /* all bytes transfered */
 }
 
 /* 
@@ -72,7 +69,7 @@ tunnel_tx(int rfd, int wfd)
  */
 
 void
-tunnel_handler(int rfdx, int wfdx, int rfdy, int wfdy)
+tunnel_handler(struct buffer_t *b, int rfdx, int wfdx, int rfdy, int wfdy)
 {
 	fd_set read_fds, all_rfds;
 	
@@ -92,12 +89,12 @@ tunnel_handler(int rfdx, int wfdx, int rfdy, int wfdy)
 		
 		/* input on rfdx: transmit data to wfdy */
 		if (FD_ISSET(rfdx, &read_fds))
-			if (tunnel_tx(rfdx, wfdy) == 0)
+			if (tunnel_tx(b, rfdx, wfdy) == 0)
 				break;
 		
 		/* input on rfdy: transmit data to wfdx */
 		if (FD_ISSET(rfdy, &read_fds))
-			if (tunnel_tx(rfdy, wfdx) == 0)
+			if (tunnel_tx(b, rfdy, wfdx) == 0)
 				break;
 	}
 	

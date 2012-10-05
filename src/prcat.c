@@ -88,7 +88,7 @@ main(int argc, char **argv)
 	}
 	
 	/* tunnel data (does not return on failure) */
-	tunnel_handler(config.ifd, config.ofd, sock, sock);
+	tunnel_handler(&buffer, config.ifd, config.ofd, sock, sock);
 	
 	/* cleanup */
 	close(sock);
