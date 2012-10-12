@@ -31,6 +31,7 @@
 #include <sys/select.h>
 
 #include <err.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <sysexits.h>
 #include <unistd.h>
@@ -132,12 +133,20 @@ tunnel_tx(struct buffer_t *b, int rfd, int wfd)
 void
 tunnel_handler(struct buffer_t *b, int rfdx, int wfdx, int rfdy, int wfdy)
 {
+	int nfds;
 	fd_set read_fds, all_rfds;
 	
 	/* init fd sets */
 	FD_ZERO(&all_rfds);
 	FD_SET(rfdx, &all_rfds);
 	FD_SET(rfdy, &all_rfds);
+	
+	/* calculate nfds parameter */
+	nfds = (rfdx > rfdy) ? rfdx : rfdy;
+	if (nfds == INT_MAX)
+		errx(EX_SOFTWARE, "nfds too large for select()");
+	else
+		++nfds;
 	
 	/* flush pending data to wfdx */
 	if (b->w_len < b->s_len)
@@ -149,7 +158,7 @@ tunnel_handler(struct buffer_t *b, int rfdx, int wfdx, int rfdy, int wfdy)
 		read_fds = all_rfds;
 		
 		/* wait for input on read set */
-		if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) == -1)
+		if (select(nfds, &read_fds, NULL, NULL, NULL) == -1)
 			err(EX_SOFTWARE, "select failed");
 		
 		/* input on rfdx: transmit data to wfdy */
